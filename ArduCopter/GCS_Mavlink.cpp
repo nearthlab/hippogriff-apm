@@ -949,6 +949,7 @@ GCS_MAVLINK::data_stream_send(void)
     	send_message(MSG_RANGEFINDER);
     	send_message(MSG_RPM);
     	send_message(MSG_SYSTEM_TIME);
+    	send_message(MSG_GIMBAL_REPORT);
     }
 
     if (copter.gcs_out_of_time) return;
@@ -956,7 +957,7 @@ GCS_MAVLINK::data_stream_send(void)
     // 1Hz
     if (stream_trigger(STREAM_EXTRA3)) {
     	send_message(MSG_PID_TUNING);
-        send_message(MSG_BATTERY2);
+        send_message(MSG_EXTENDED_STATUS1);
         send_message(MSG_WIND);
 
 
