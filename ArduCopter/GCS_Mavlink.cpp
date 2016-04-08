@@ -949,7 +949,7 @@ GCS_MAVLINK::data_stream_send(void)
     	send_message(MSG_RANGEFINDER);
     	send_message(MSG_RPM);
     	send_message(MSG_SYSTEM_TIME);
-    	send_message(MSG_GIMBAL_REPORT);
+    	send_message(MSG_MOUNT_STATUS);
     }
 
     if (copter.gcs_out_of_time) return;
