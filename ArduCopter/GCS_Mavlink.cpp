@@ -410,6 +410,18 @@ void NOINLINE Copter::send_rangefinder(mavlink_channel_t chan)
 }
 #endif
 
+void NOINLINE Copter::send_rangefinder(mavlink_channel_t chan, uint8_t instatnce)
+{
+    // exit immediately if sonar is disabled
+    if (!sonar.has_data()) {
+        return;
+    }
+    mavlink_msg_rangefinder_send(
+            chan,
+            sonar.distance_cm(instatnce) * 0.01f,
+            -instatnce);	// TODO: To tricky. You should change MavLink
+}
+
 /*
   send RPM packet
  */
@@ -633,6 +645,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #if CONFIG_SONAR == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         copter.send_rangefinder(chan);
+        copter.send_rangefinder(chan, 1);
 #endif
         break;
 
