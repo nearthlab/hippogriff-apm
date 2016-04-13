@@ -37,6 +37,7 @@ void AP_Mount_Alexmos::update()
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
+        	control_axis(_angle_ef_target_rad, false);
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
@@ -137,7 +138,19 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
     outgoing_buffer.angle_speed.angle_pitch = DEGREE_TO_VALUE(target_deg.y);
     outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
     outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(target_deg.z);
+
+    //alexmos_ahrs ahrs;
+    //ahrs.mode = 0x03;
+    //ahrs.z1_vect[0] = 0.0;
+    //ahrs.z1_vect[1] = 0.0;
+    //ahrs.z1_vect[2] = 1.0;
+    //ahrs.h1_vect[0] = 0.0;
+    //ahrs.h1_vect[1] = 1.0;
+    //ahrs.h1_vect[2] = 0.0;
+    //_frontend._ahrs.
+    //send_command(CMD_AHRS_HELPER, (uint8_t *)&ahrs, sizeof(alexmos_ahrs));
     send_command(CMD_CONTROL, (uint8_t *)&outgoing_buffer.angle_speed, sizeof(alexmos_angles_speed));
+    //PX4_INFO("Angle Cmd F %f %f %f\n", target_deg.x, target_deg.y, target_deg.z);
 }
 
 /*
