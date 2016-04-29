@@ -594,7 +594,7 @@ void
 AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
 {
     if (drivers[1] != NULL && drivers[1]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
-        drivers[1]->send_mavlink_gps_rtk(chan);
+        drivers[1]->send_mavlink_gps2_rtk(chan);
     }
 }
 #endif

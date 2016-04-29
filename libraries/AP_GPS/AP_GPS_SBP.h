@@ -40,6 +40,8 @@ public:
 
     static bool _detect(struct SBP_detect_state &state, uint8_t data);
 
+    virtual void send_mavlink_gps2_rtk(mavlink_channel_t chan);
+
 private:
 
    // ************************************************************************

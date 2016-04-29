@@ -519,6 +519,21 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
 
 };
 
+void
+AP_GPS_SBP::send_mavlink_gps2_rtk(mavlink_channel_t chan)
+{
+	PX4_INFO("RTK!");
+
+	// TODO: Write!
+	/*
+	mavlink_msg_gps2_rtk_send(
+
+	        );
+	*/
+
+	return;
+}
+
 
 #endif // SBP_HW_LOGGING
 
