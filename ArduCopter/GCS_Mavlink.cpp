@@ -972,6 +972,7 @@ GCS_MAVLINK::data_stream_send(void)
     	send_message(MSG_PID_TUNING);
         send_message(MSG_EXTENDED_STATUS1);
         send_message(MSG_WIND);
+        send_message(MSG_GPS_RAW);
 
 
 #if AP_TERRAIN_AVAILABLE
