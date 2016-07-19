@@ -35,8 +35,10 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <AP_HAL/AP_HAL.h>
 
 #include "AP_GPS_NMEA.h"
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -46,6 +48,15 @@ extern const AP_HAL::HAL& hal;
 #ifdef NMEA_LOG_PATH
 #include <stdio.h>
 #endif
+
+
+# define Debug(fmt, args ...)                  \
+do {                                            \
+    PX4_INFO("%s:%d: " fmt,     \
+                        __FUNCTION__, __LINE__, \
+                        ## args);               \
+} while(0)
+
 
 // SiRF init messages //////////////////////////////////////////////////////////
 //
@@ -300,7 +311,6 @@ bool AP_GPS_NMEA::_term_complete()
                     make_gps_time(_new_date, _new_time * 10);
                     state.last_gps_time_ms = hal.scheduler->millis();
                     // To-Do: add support for proper reporting of 2D and 3D fix
-                    state.status           = AP_GPS::GPS_OK_FIX_3D;
                     fill_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GPGGA:
@@ -310,7 +320,22 @@ bool AP_GPS_NMEA::_term_complete()
                     state.num_sats      = _new_satellite_count;
                     state.hdop          = _new_hdop;
                     // To-Do: add support for proper reporting of 2D and 3D fix
-                    state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    switch(_gps_status)
+					{
+					case 1:
+						state.status           = AP_GPS::GPS_OK_FIX_3D;
+						break;
+					case 2:
+					case 5:
+						state.status           = AP_GPS::GPS_OK_FIX_3D_DGPS;
+						break;
+					case 4:
+						state.status           = AP_GPS::GPS_OK_FIX_3D_RTK;
+						break;
+					default:
+						state.status           = AP_GPS::NO_FIX;
+						break;
+					}
                     break;
                 case _GPS_SENTENCE_GPVTG:
                     state.ground_speed     = _new_speed*0.01f;
@@ -364,6 +389,7 @@ bool AP_GPS_NMEA::_term_complete()
             break;
         case _GPS_SENTENCE_GPGGA + 6: // Fix data (GGA)
             _gps_data_good = _term[0] > '0';
+            _gps_status = _term[0] - '0';
             break;
         case _GPS_SENTENCE_GPVTG + 9: // validity (VTG) (we may not see this field)
             _gps_data_good = _term[0] != 'N';
@@ -462,3 +488,4 @@ AP_GPS_NMEA::_detect(struct NMEA_detect_state &state, uint8_t data)
     }
     return false;
 }
+
