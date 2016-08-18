@@ -90,6 +90,7 @@ public:
         GPS_TYPE_SBP   = 8,
         GPS_TYPE_PX4   = 9,
         GPS_TYPE_ERB   = 13,
+        GPS_TYPE_NOVATEL = 127
     };
 
     /// GPS status codes
@@ -427,5 +428,6 @@ private:
 #include "AP_GPS_SBP.h"
 #include "AP_GPS_PX4.h"
 #include "AP_GPS_ERB.h"
+#include "AP_GPS_NOVATEL.h"
 
 #endif // __AP_GPS_H__
