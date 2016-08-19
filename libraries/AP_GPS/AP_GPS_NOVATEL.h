@@ -77,6 +77,37 @@ private:
 		float		reserved;
 	};
 
+    struct PACKED novatel_bestxyzb {
+		uint32_t	p_sol_status;
+		uint32_t 	pos_type;
+		double	 	p_x;
+		double		p_y;
+		double		p_z;
+		float		p_x_sigma;
+		float		p_y_sigma;
+		float		p_z_sigma;
+		uint32_t	v_sol_status;
+		uint32_t 	vel_type;
+		double	 	v_x;
+		double		v_y;
+		double		v_z;
+		float		v_x_sigma;
+		float		v_y_sigma;
+		float		v_z_sigma;
+		int8_t		stn_id[4];
+		float		v_latency;
+		float		diff_age;
+		float		sol_age;
+		uint8_t		sv;
+		uint8_t		sv_sol;
+		uint8_t		gg_l1;
+		uint8_t		soln_multi_svs;
+		int8_t		reserved;
+		int8_t		ext_sol_stat;
+		int8_t		gal_beidou_mask;
+		int8_t		gps_glonass_mask;
+	};
+
     // Header
 	typedef union PACKED {
 		novatel_header data;
@@ -87,6 +118,7 @@ private:
 	typedef union PACKED {
 		novatel_bestposb bestposb;
 		novatel_bestvelb bestvelb;
+		novatel_bestxyzb bestxyzb;
 		uint8_t bytes[];
 	} novatel_message_union;
 
@@ -105,6 +137,7 @@ private:
     enum novatel_message_id{
         MSG_BESTPOSB = 42,
         MSG_BESTVELB = 99,
+        MSG_BESTXYZB = 241,
     };
 
     enum novatel_fixed_type {
@@ -170,6 +203,9 @@ private:
     // do we have new speed information?
     bool _new_speed:1;
 
+    // ECEF to NED Transformation Matrix
+    double _ecef2ned[3][3];
+
     // Buffer parse & GPS state update
     bool _parse_gps();
 
@@ -183,4 +219,7 @@ private:
     uint32_t _calculate_block_crc32(uint32_t ulCount, uint8_t *ucBuffer);
     AP_GPS::GPS_Status _convert_gps_status(uint32_t pos_type);
     void _fill_ned_vel(double hor_spd, double trk_gnd, double vert_spd);
+
+    void _calculate_ecef2ned(double lat, double lon);
+    void _convert_ecef_vel_to_ned_vel();
 };

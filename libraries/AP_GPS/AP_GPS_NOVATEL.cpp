@@ -212,16 +212,18 @@ AP_GPS_NOVATEL::_convert_gps_status(uint32_t pos_type)
 	return AP_GPS::NO_FIX;
 }
 
+
 void
 AP_GPS_NOVATEL::_fill_ned_vel(double hor_spd, double trk_gnd, double vert_spd)
 {
 	double vel_n = hor_spd*cos(radians(trk_gnd));
 	double vel_e = hor_spd*sin(radians(trk_gnd));
 
-	state.velocity.x = vel_n * 0.01f;
-	state.velocity.y = vel_e * 0.01f;
-	state.velocity.z = -vert_spd * 0.01f;
+	state.velocity.x = vel_n;
+	state.velocity.y = vel_e;
+	state.velocity.z = -vert_spd;
 }
+
 
 bool
 AP_GPS_NOVATEL::_parse_gps(void)
@@ -233,11 +235,11 @@ AP_GPS_NOVATEL::_parse_gps(void)
     switch (_msg_id) {
     case MSG_BESTPOSB:
         _last_pos_time        = p_hdr->seconds;
-        state.location.lng    = (int32_t)(p_pos);
+        state.location.lng    = (int32_t)(p_pos->lon * 1e7);
         state.location.lat    = (int32_t)(p_pos->lat * 1e7);
         state.location.alt    = (int32_t)(p_pos->hgt * 1e2);
         state.status          = _convert_gps_status(p_pos->pos_type);
-        state.num_sats		  = (uint8_t)p_pos->n_sol_sv;
+        state.num_sats		  = (uint8_t)p_pos->n_sv;
         _new_position = true;
         state.horizontal_accuracy = p_pos->lat_sigma * 1.0e-3f;
         state.vertical_accuracy = p_pos->hgt_sigma * 1.0e-3f;
@@ -253,18 +255,37 @@ AP_GPS_NOVATEL::_parse_gps(void)
 
     case MSG_BESTVELB:
         _last_vel_time         = p_hdr->seconds;
-        state.ground_speed     = (float)p_vel->hor_spd * 0.01f;        // m/s
-        // Heading 2D deg * 100000 rescaled to deg * 100
-        state.ground_course_cd = wrap_360_cd(p_vel->trk_gnd / 1000);
-        state.have_vertical_velocity = true;
+        state.ground_speed     = (float)p_vel->hor_spd;        // m/s
+        state.ground_course_cd = (int32_t)(p_vel->trk_gnd * 100.0f);
         _fill_ned_vel(
 			p_vel->hor_spd,
 			p_vel->trk_gnd,
 			p_vel->vert_spd
+		);
+
+		state.have_vertical_velocity = true;
+		state.have_speed_accuracy = false;
+		_new_speed = true;
+    	break;
+
+
+    case MSG_BESTXYZB:
+    	// TODO: BK-130 Check!
+    	if(state.status < AP_GPS::GPS_OK_FIX_3D)
+    		break;
+
+		_calculate_ecef2ned(
+			_packet.msg.bestposb.lat,
+			_packet.msg.bestposb.lon
 			);
-        state.have_speed_accuracy = false;
-        _new_speed = true;
-        break;
+		_convert_ecef_vel_to_ned_vel();
+
+		_last_vel_time         = p_hdr->seconds;
+		state.have_vertical_velocity = true;
+		state.have_speed_accuracy = true;
+		_new_speed = true;
+		PX4_INFO("MSG_BESTXYZB %f %f %f", state.velocity.x, state.velocity.y, state.velocity.z );
+		break;
 
     default:
         Debug("Unexpected message 0x%02x", (unsigned)_msg_id);
@@ -299,4 +320,68 @@ bool
 AP_GPS_NOVATEL::_detect(struct NOVATEL_detect_state &state, uint8_t data)
 {
     return true;
+}
+/**
+ * @remark refer to http://www.navipedia.net/index.php/Transformations_between_ECEF_and_ENU_coordinates
+ */
+void
+AP_GPS_NOVATEL::_calculate_ecef2ned(double lat, double lon)
+{
+	double lat_rad = radians(lat);
+	double lon_rad = radians(lon);
+
+	double clat = cos(lat_rad);
+	double slat = sin(lat_rad);
+	double clon = cos(lon_rad);
+	double slon = sin(lon_rad);
+
+	// ECEF -> N
+	_ecef2ned[0][0] = -clon*slat;
+	_ecef2ned[0][1] = -slon*slat;
+	_ecef2ned[0][2] = clat;
+
+	// ECEF -> E
+	_ecef2ned[1][0] = -slon;
+	_ecef2ned[1][1] = clon;
+	_ecef2ned[1][2] = 0;
+
+	// ECEF -> D
+	_ecef2ned[2][0] = -clon*clat;
+	_ecef2ned[2][1] = -slon*clat;
+	_ecef2ned[2][2] = -slat;
+
+
+}
+
+void
+AP_GPS_NOVATEL::_convert_ecef_vel_to_ned_vel()
+{
+	double v_ecef_x = _packet.msg.bestxyzb.v_x;
+	double v_ecef_y = _packet.msg.bestxyzb.v_y;
+	double v_ecef_z = _packet.msg.bestxyzb.v_z;
+
+	float sigma_x = _packet.msg.bestxyzb.v_x_sigma;
+	float sigma_y = _packet.msg.bestxyzb.v_x_sigma;
+	float sigma_z = _packet.msg.bestxyzb.v_x_sigma;
+	float tmp = 0.0f;
+
+
+	state.velocity.x = 		_ecef2ned[0][0] * v_ecef_x
+						+	_ecef2ned[0][1] * v_ecef_y
+						+ 	_ecef2ned[0][2] * v_ecef_z;
+
+	state.velocity.y = 		_ecef2ned[1][0] * v_ecef_x
+						+	_ecef2ned[1][1] * v_ecef_y
+						+ 	_ecef2ned[1][2] * v_ecef_z;
+
+	state.velocity.z = 		_ecef2ned[2][0] * v_ecef_x
+						+	_ecef2ned[2][1] * v_ecef_y
+						+ 	_ecef2ned[2][2] * v_ecef_z;
+
+
+	tmp += sigma_x * sigma_x;
+	tmp += sigma_y * sigma_y;
+	tmp += sigma_x * sigma_z;
+	tmp /= 3.0f;
+	state.vertical_accuracy = sqrt(tmp);
 }
