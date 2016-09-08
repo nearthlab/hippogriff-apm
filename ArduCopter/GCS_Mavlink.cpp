@@ -949,7 +949,6 @@ GCS_MAVLINK::data_stream_send(void)
 
     // 20Hz
     if (stream_trigger(STREAM_EXTRA1)) {
-    	send_message(MSG_HEARTBEAT);
         send_message(MSG_ATTITUDE);
         send_message(MSG_LOCATION);
         send_message(MSG_RANGEFINDER);

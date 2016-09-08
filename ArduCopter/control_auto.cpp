@@ -519,7 +519,7 @@ uint8_t Copter::get_default_auto_yaw_mode(bool rtl)
 
         case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
             if (rtl) {
-                return AUTO_YAW_HOLD;
+                return AUTO_YAW_RESETTOARMEDYAW;
             }else{
                 return AUTO_YAW_LOOK_AT_NEXT_WP;
             }
