@@ -3,13 +3,13 @@
 
 #include <DataFlash/DataFlash.h>
 
-#define NVOATEL_DEBUGGING 0
+#define NOVATEL_DEBUGGING 0
 
 #define STAT_FIX_VALID 0x01
 
 extern const AP_HAL::HAL& hal;
 
-#if NVOATEL_DEBUGGING
+#if NOVATEL_DEBUGGING
  # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
 #else
  # define Debug(fmt, args ...)

@@ -287,6 +287,9 @@ AP_GPS::detect_instance(uint8_t instance)
 			hal.console->print_P(PSTR(" ERB "));
 			new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
 		}
+		else if((_type[instance] == GPS_TYPE_TRIMBLE && pgm_read_dword(&_baudrates[dstate->last_baud]) == 115200)) {
+			new_gps = new AP_GPS_TRIMBLE(*this, state[instance], _port[instance]);
+		}
 		else if((_type[instance] == GPS_TYPE_NOVATEL && pgm_read_dword(&_baudrates[dstate->last_baud]) == 115200)) {
 			new_gps = new AP_GPS_NOVATEL(*this, state[instance], _port[instance]);
 		}
