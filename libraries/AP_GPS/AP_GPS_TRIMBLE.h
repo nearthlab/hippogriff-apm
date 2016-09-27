@@ -18,6 +18,31 @@ public:
 
 private:
     typedef struct {
+    	uint8_t new_position : 1;
+    	uint8_t clock_fix : 1;
+    	uint8_t horizontal_fix : 1;
+    	uint8_t height_fix : 1;
+    	uint8_t reserved1 : 1;
+    	uint8_t least_square_pos : 1;
+    	uint8_t reserved2 : 1;
+    	uint8_t filtered_l1_pseudorange : 1;
+    	uint8_t diff_pos : 1;
+    	uint8_t diff_pos_method1 : 1;
+    	uint8_t diff_pos_method2 : 1;
+    	uint8_t omnistar_solution : 1;
+    	uint8_t pos_det : 1;
+    	uint8_t network_rtk : 1;
+    	uint8_t location_rtk : 1;
+    	uint8_t beacon_dgps : 1;
+    }PACKED trimble_position_flag;
+
+    typedef struct {
+    	uint8_t validity : 1;
+    	uint8_t computation : 1;
+    	uint8_t reserved : 6;
+    }PACKED trimble_velocity_flag;
+
+    typedef struct {
     	int8_t		stx;
     	int8_t		status;
     	int8_t		packet_type;
@@ -45,7 +70,7 @@ private:
     typedef struct {
     	int8_t		output_record_type;
     	int8_t		record_length;
-    	int8_t		velocity_flags;
+    	trimble_velocity_flag		velocity_flags;
     	float		speed;
     	float		heading;
     	float		vertical_velocity;
@@ -73,25 +98,6 @@ private:
     	trimble_message msg;
     	uint8_t msg_buf[sizeof(trimble_message)];
     }PACKED trimble_packet;
-
-    typedef struct {
-    	uint8_t new_position : 1;
-    	uint8_t clock_fix : 1;
-    	uint8_t horizontal_fix : 1;
-    	uint8_t height_fix : 1;
-    	uint8_t reserved1 : 1;
-    	uint8_t least_square_pos : 1;
-    	uint8_t reserved2 : 1;
-    	uint8_t filtered_l1_pseudorange : 1;
-    	uint8_t diff_pos : 1;
-    	uint8_t diff_pos_method1 : 1;
-    	uint8_t diff_pos_method2 : 1;
-    	uint8_t omnistar_solution : 1;
-    	uint8_t pos_det : 1;
-    	uint8_t network_rtk : 1;
-    	uint8_t location_rtk : 1;
-    	uint8_t beacon_dgps : 1;
-    }PACKED trimble_position_flag;
 
     enum trimble_preamble {
     	GSOF_STX = 0x02,
@@ -141,8 +147,6 @@ private:
     trimble_packet _packet;
 
     // Packet checksum accumulators
-    uint8_t _ck_a;
-    uint8_t _ck_b;
     uint8_t _ck;
 
     // State machine state
@@ -178,7 +182,8 @@ private:
     bool read(uint8_t buffer[]);
     bool _check_checksum(void);
     AP_GPS::GPS_Status _convert_gps_status(int16_t position_flag);
-    void _fill_ned_vel(double hor_spd, double trk_gnd, double vert_spd);
+    bool _is_vel_ok(trimble_velocity* p_vel);
+    void _fill_ned_vel(double hor_spd, double heading, double vert_spd);
     bool _read_trimble_record(void);
     bool _parse_trimble(void);
 };

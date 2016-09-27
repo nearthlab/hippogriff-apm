@@ -24,6 +24,7 @@ AP_GPS_TRIMBLE::AP_GPS_TRIMBLE(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::
     _fix_count(0),
     _new_position(0),
     _new_speed(0),
+    _ck(0),
     next_fix(AP_GPS::NO_FIX)
 {
 }
@@ -43,15 +44,13 @@ AP_GPS_TRIMBLE::read(void)
 	uint8_t data;
 	int16_t numc;
 	bool parsed = false;
-	int32_t ck_idx;
-	double tmp;
 
 	numc = port->available();
 	for (int16_t i = 0; i < numc; i++) {        // Process bytes received
 
 		// read the next byte
 		data = port->read();
-		reset:
+		//reset:
 		switch (_step) {
 
 
@@ -95,7 +94,6 @@ AP_GPS_TRIMBLE::read(void)
 			if (++_payload_counter == _payload_length)
 			{
 				_step++;
-				ck_idx = 0;
 			}
 			break;
 
@@ -137,7 +135,6 @@ AP_GPS_TRIMBLE::_check_checksum(void)
 	uint8_t calculated = 0;
 	int i;
 
-	trimble_header* p_hdr = &(_packet.hdr.data);
 	uint8_t* data = _packet.msg_buf;
 	int32_t len = _packet.hdr.data.length;
 
@@ -145,7 +142,7 @@ AP_GPS_TRIMBLE::_check_checksum(void)
 	calculated += _packet.hdr.data.packet_type;
 	calculated += len;
 
-	if (len > sizeof(_packet.msg_buf))
+	if (len > (int32_t)sizeof(_packet.msg_buf))
 	{
 		PX4_INFO("Out of buf %d, %d", len, sizeof(_packet.msg_buf));
 		return false;
@@ -184,12 +181,21 @@ AP_GPS_TRIMBLE::_convert_gps_status(int16_t position_flag)
 	return AP_GPS::GPS_OK_FIX_3D_RTK;
 }
 
+bool
+AP_GPS_TRIMBLE::_is_vel_ok(trimble_velocity* p_vel)
+{
+	//if ((p_vel->velocity_flags.validity == 1) && (p_vel->velocity_flags.computation == 0))
+	if ((p_vel->velocity_flags.validity == 1))
+		return true;
+	else
+		return false;
+}
 
 void
-AP_GPS_TRIMBLE::_fill_ned_vel(double hor_spd, double trk_gnd, double vert_spd)
+AP_GPS_TRIMBLE::_fill_ned_vel(double hor_spd, double heading, double vert_spd)
 {
-	double vel_n = hor_spd*cos(radians(trk_gnd));
-	double vel_e = hor_spd*sin(radians(trk_gnd));
+	double vel_n = hor_spd*cos(heading);
+	double vel_e = hor_spd*sin(heading);
 
 	state.velocity.x = vel_n;
 	state.velocity.y = vel_e;
@@ -220,7 +226,7 @@ AP_GPS_TRIMBLE::_read_trimble_record(void)
 		type = buf[idx + 0];
 		len = buf[idx + 1] + 2;	// type + len + datalength
 
-		if ((idx + len) > sizeof(_packet.msg_buf))
+		if ((idx + len) > (int32_t)sizeof(_packet.msg_buf))
 		{
 			PX4_INFO("Exceeds buf idx:%d, len%d, sizebuf %d", idx, len, sizeof(_packet.msg_buf));
 			return false;
@@ -277,7 +283,6 @@ AP_GPS_TRIMBLE::_read_trimble_record(void)
 bool
 AP_GPS_TRIMBLE::_parse_trimble(void)
 {
-	trimble_header* p_hdr = &(_packet.hdr.data);
 	trimble_time* p_time = &(_packet.msg.time);
 	trimble_llh* p_llh = &(_packet.msg.llh);
 	trimble_velocity* p_vel = &(_packet.msg.velocity);
@@ -313,19 +318,27 @@ AP_GPS_TRIMBLE::_parse_trimble(void)
 	state.have_vertical_accuracy = false;
 
 	// Velocity
+	if (_is_vel_ok(p_vel))
+	{
+		_last_vel_time = gps_time;
+		state.ground_speed = cvt_float(p_vel->speed);        // m/s
+		state.ground_course_cd = (int32_t)(cvt_float(p_vel->heading) * 100.0f);
 
-	_last_vel_time = gps_time;
-	state.ground_speed = cvt_float(p_vel->speed);        // m/s
-	state.ground_course_cd = (int32_t)(cvt_float(p_vel->heading) * 100.0f);
-	_fill_ned_vel(
-		cvt_float(p_vel->speed),
-		cvt_float(p_vel->heading),
-		cvt_float(p_vel->vertical_velocity)
-	);
+		//PX4_INFO("VEL: %u, %u", p_vel->velocity_flags.validity, p_vel->velocity_flags.computation);
+		_fill_ned_vel(
+			cvt_float(p_vel->speed),
+			cvt_float(p_vel->heading),
+			cvt_float(p_vel->vertical_velocity)
+		);
 
-	state.have_vertical_velocity = true;
-	state.have_speed_accuracy = false;
-	_new_speed = true;
+		state.have_vertical_velocity = true;
+		state.have_speed_accuracy = false;
+		_new_speed = true;
+	}
+	else
+	{
+		_new_speed = false;
+	}
 
 	//PX4_INFO("%d %d %d %d %d %f %f %f", state.status, state.time_week_ms,
 		//state.location.lat, state.location.lng, state.location.alt,
