@@ -1596,6 +1596,29 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
         velocity.x,
         velocity.y,
         velocity.z);
+//(mavlink_channel_t chan, uint32_t time_boot_ms, uint8_t coordinate_frame,
+//uint16_t type_mask, float x, float y, float z, float vx, float vy, float vz, float afx, float afy, float afz, float yaw, float yaw_rate)
+    //void mavlink_msg_position_target_local_ned_send(enum {mavlink_types.h:6238}, unsigned int,
+    //unsigned char, unsigned short int, float, float, float, float, float, float, float, float, float, float, float)
+
+    mavlink_msg_position_target_local_ned_send(
+            chan,
+            AP_HAL::millis(),
+            0x00,
+            MAV_FRAME_LOCAL_OFFSET_NED,
+            local_position.x,
+            local_position.y,
+            local_position.z,
+            velocity.x,
+            velocity.y,
+            velocity.z,
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f);
+
+
 }
 
 /*
