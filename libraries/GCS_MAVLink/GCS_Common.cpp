@@ -1600,18 +1600,18 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
 //uint16_t type_mask, float x, float y, float z, float vx, float vy, float vz, float afx, float afy, float afz, float yaw, float yaw_rate)
     //void mavlink_msg_position_target_local_ned_send(enum {mavlink_types.h:6238}, unsigned int,
     //unsigned char, unsigned short int, float, float, float, float, float, float, float, float, float, float, float)
-
+    Vector3f pos_vector, vel_vector;
     mavlink_msg_position_target_local_ned_send(
             chan,
             AP_HAL::millis(),
             0x00,
             MAV_FRAME_LOCAL_OFFSET_NED,
-            local_position.x,
-            local_position.y,
-            local_position.z,
-            velocity.x,
-            velocity.y,
-            velocity.z,
+            pos_vector.x,
+            pos_vector.y,
+            pos_vector.z,
+            vel_vector.x,
+            vel_vector.y,
+            vel_vector.z,
             0.0f,
             0.0f,
             0.0f,
