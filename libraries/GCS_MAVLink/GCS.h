@@ -15,6 +15,7 @@
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_HAL/utility/RingBuffer.h>
+#include <AC_AttitudeControl/AC_PosControl.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -163,7 +164,8 @@ public:
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
     void send_autopilot_version(uint8_t major_version, uint8_t minor_version, uint8_t patch_version, uint8_t version_type) const;
-    void send_local_position(const AP_AHRS &ahrs) const;
+//    void send_local_position(const AP_AHRS &ahrs) const;
+    void send_local_position(const AP_AHRS &ahrs, const AC_PosControl &pos_control) const;
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
     static void send_home_all(const Location &home);

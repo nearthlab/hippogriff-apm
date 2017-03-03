@@ -798,7 +798,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         // waypoint and not for the mission
         result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
                                              : MAV_MISSION_ERROR) ;
-
+        //send_text(MAV_SEVERITY_DEBUG,"guided_mode");
         // verify we received the command
         goto mission_ack;
     }
@@ -1155,6 +1155,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
 {
     const Vector3f &accel = ins.get_accel(0);
     const Vector3f &gyro = ins.get_gyro(0);
+
     Vector3f mag;
     if (compass.get_count() >= 1) {
         mag = compass.get_field(0);
@@ -1211,6 +1212,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     if (!HAVE_PAYLOAD_SPACE(chan, SCALED_IMU3)) {
         return;
     }
+
     const Vector3f &accel3 = ins.get_accel(2);
     const Vector3f &gyro3 = ins.get_gyro(2);
     if (compass.get_count() >= 3) {
@@ -1578,9 +1580,12 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
 /*
   send LOCAL_POSITION_NED message
  */
-void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
+//void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
+void  GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs, const AC_PosControl &pos_control) const
 {
     Vector3f local_position, velocity;
+    const Vector3f& target_position = pos_control.get_pos_target();
+    const Vector3f& target_velocity = pos_control.get_vel_target();
     if (!ahrs.get_relative_position_NED(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
         // we don't know the position and velocity
@@ -1596,29 +1601,38 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
         velocity.x,
         velocity.y,
         velocity.z);
+    //const Vector3f test = pos_control._pos_target;
+
+    // const Vector3f &targetPos = pos_control.get_pos_target();
+    //const Vector3f &targetVel = pos_control.get_vel_target();
+    //mavlink_msg_position_target_local_ned_get_x
+    mavlink_msg_position_target_local_ned_send(
+            chan,
+            AP_HAL::millis(),
+            MAV_FRAME_LOCAL_NED,
+            0b0000111111000000,
+            target_position.x,
+            target_position.y,
+            target_position.z,
+            target_velocity.x,
+            target_velocity.y,
+            target_velocity.z,
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f );
+
 //(mavlink_channel_t chan, uint32_t time_boot_ms, uint8_t coordinate_frame,
 //uint16_t type_mask, float x, float y, float z, float vx, float vy, float vz, float afx, float afy, float afz, float yaw, float yaw_rate)
     //void mavlink_msg_position_target_local_ned_send(enum {mavlink_types.h:6238}, unsigned int,
     //unsigned char, unsigned short int, float, float, float, float, float, float, float, float, float, float, float)
-    Vector3f pos_vector, vel_vector;
-    mavlink_msg_position_target_local_ned_send(
-            chan,
-            AP_HAL::millis(),
-            0x00,
-            MAV_FRAME_LOCAL_OFFSET_NED,
-            pos_vector.x,
-            pos_vector.y,
-            pos_vector.z,
-            vel_vector.x,
-            vel_vector.y,
-            vel_vector.z,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.0f,
-            0.0f);
+
+    // decode packet
 
 
+
+   // mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
 }
 
 /*

@@ -43,6 +43,8 @@ bool Copter::guided_init(bool ignore_checks)
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         // start in position control mode
         guided_pos_control_start();
+        //guided_posvel_control_start();
+        //gcs_send_text(MAV_SEVERITY_DEBUG,"init");
         return true;
     }else{
         return false;
@@ -83,7 +85,7 @@ void Copter::guided_pos_control_start()
 {
     // set to position control mode
     guided_mode = Guided_WP;
-
+    gcs_send_text(MAV_SEVERITY_DEBUG,"poscontrol start");
     // initialise waypoint and spline controller
     wp_nav.wp_and_spline_init();
 
@@ -104,6 +106,7 @@ void Copter::guided_pos_control_start()
 // initialise guided mode's velocity controller
 void Copter::guided_vel_control_start()
 {
+    //gcs_send_text(MAV_SEVERITY_DEBUG,"guided start");
     // set guided_mode to velocity controller
     guided_mode = Guided_Velocity;
 
@@ -118,6 +121,7 @@ void Copter::guided_vel_control_start()
 // initialise guided mode's posvel controller
 void Copter::guided_posvel_control_start()
 {
+    gcs_send_text(MAV_SEVERITY_DEBUG,"posvelcontrol");
     // set guided_mode to velocity controller
     guided_mode = Guided_PosVel;
 
@@ -148,7 +152,7 @@ void Copter::guided_angle_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = Guided_Angle;
-
+    //gcs_send_text(MAV_SEVERITY_DEBUG,"anglecontrol");
     // set vertical speed and acceleration
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
     pos_control.set_accel_z(wp_nav.get_accel_z());
@@ -177,6 +181,7 @@ void Copter::guided_angle_control_start()
 // else return false if the waypoint is outside the fence
 bool Copter::guided_set_destination(const Vector3f& destination)
 {
+    gcs_send_text(MAV_SEVERITY_DEBUG,"set_destination");
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
         guided_pos_control_start();
@@ -258,7 +263,9 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
     posvel_update_time_ms = millis();
     guided_pos_target_cm = destination;
     guided_vel_target_cms = velocity;
-
+    gcs_send_text(MAV_SEVERITY_DEBUG,"set_destination");
+    gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f %f %f",guided_pos_target_cm.x/100.0,guided_pos_target_cm.y/100.0,guided_pos_target_cm.z/100.0);
+    gcs_send_text(MAV_SEVERITY_DEBUG,"done_destination");
     pos_control.set_pos_target(guided_pos_target_cm);
 
     // log target
@@ -371,6 +378,7 @@ void Copter::guided_takeoff_run()
 // called from guided_run
 void Copter::guided_pos_control_run()
 {
+    float target_climb_rate = 0.0f;
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -394,14 +402,17 @@ void Copter::guided_pos_control_run()
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
-
+    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
     // run waypoint controller
     failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
+    pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
     pos_control.update_z_controller();
 
     // call attitude controller
@@ -491,7 +502,7 @@ void Copter::guided_posvel_control_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-
+   // float target_climb_rate = 0.0f;
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
@@ -511,7 +522,8 @@ void Copter::guided_posvel_control_run()
 
     // calculate dt
     float dt = pos_control.time_since_last_xy_update();
-
+  //  target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+  //  target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     // update at poscontrol update rate
     if (dt >= pos_control.get_dt_xy()) {
         // sanity check dt
@@ -523,6 +535,9 @@ void Copter::guided_posvel_control_run()
         guided_pos_target_cm += guided_vel_target_cms * dt;
 
         // send position and velocity targets to position controller
+        gcs_send_text(MAV_SEVERITY_DEBUG,"%guided_pos_target_cm");
+         gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f %f %f",guided_pos_target_cm.x/100.0,guided_pos_target_cm.y/100.0,guided_pos_target_cm.z/100.0);
+         gcs_send_text(MAV_SEVERITY_DEBUG,"%guided_pos_target_cm");
         pos_control.set_pos_target(guided_pos_target_cm);
         pos_control.set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
 
@@ -530,6 +545,7 @@ void Copter::guided_posvel_control_run()
         pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler, false);
     }
 
+//    pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
     pos_control.update_z_controller();
 
     // call attitude controller

@@ -90,6 +90,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
 NOINLINE void Copter::send_attitude(mavlink_channel_t chan)
 {
     const Vector3f &gyro = ins.get_gyro();
+
     mavlink_msg_attitude_send(
         chan,
         millis(),
@@ -154,9 +155,9 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
                                                          ~MAV_SYS_STATUS_LOGGING);
 
     switch (control_mode) {
-    case AUTO:
-    case AVOID_ADSB:
     case GUIDED:
+    case AVOID_ADSB:
+    case AUTO:
     case LOITER:
     case RTL:
     case CIRCLE:
@@ -555,7 +556,8 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
-        send_local_position(copter.ahrs);
+        //send_local_position(copter.ahrs);
+        send_local_position(copter.ahrs, copter.pos_control);
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
@@ -661,6 +663,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs(copter.ahrs);
+
         break;
 
     case MSG_SIMSTATE:
@@ -1275,10 +1278,13 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             // param5 : latitude
             // param6 : longitude
             // param7 : altitude (absolute)
+            copter.gcs_send_text(MAV_SEVERITY_DEBUG,"home_do_set");
             result = MAV_RESULT_FAILED; // assume failure
+            result = MAV_RESULT_ACCEPTED;
             if(is_equal(packet.param1,1.0f) || (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7))) {
                 if (copter.set_home_to_current_location_and_lock()) {
                     result = MAV_RESULT_ACCEPTED;
+                    copter.gcs_send_text(MAV_SEVERITY_DEBUG,"set_home");
                 }
             } else {
                 // sanity check location
@@ -1292,6 +1298,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 if (!copter.far_from_EKF_origin(new_home_loc)) {
                     if (copter.set_home_and_lock(new_home_loc)) {
                         result = MAV_RESULT_ACCEPTED;
+
                     }
                 }
             }
@@ -1733,7 +1740,8 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // decode packet
         mavlink_set_position_target_local_ned_t packet;
         mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
-
+        //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"start");
+        //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",8.0);
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((copter.control_mode != GUIDED) && !(copter.control_mode == AUTO && copter.auto_mode == Auto_NavGuided)) {
             break;
@@ -1761,21 +1769,31 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // prepare position
         Vector3f pos_vector;
         if (!pos_ignore) {
+            //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",1.0);
+            //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"pos_ignore");
             // convert to cm
             pos_vector = Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f);
+           // copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",2.0);
+            //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"pos_Vector");
             // rotate to body-frame if necessary
             if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                 packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
                 copter.rotate_body_frame_to_NE(pos_vector.x, pos_vector.y);
+              //  copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",3.0);
+              //  copter.gcs_send_text(MAV_SEVERITY_DEBUG,"FameSet");
             }
             // add body offset if necessary
             if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
                 packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                 packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
                 pos_vector += copter.inertial_nav.get_position();
+                //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",4.0);
+                //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"Bodyset");
             } else {
                 // convert from alt-above-home to alt-above-ekf-origin
                 pos_vector.z = copter.pv_alt_above_origin(pos_vector.z);
+                //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",5.0);
+                //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"convert");
             }
         }
 
@@ -1784,17 +1802,30 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         if (!vel_ignore) {
             // convert to cm
             vel_vector = Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f);
+            //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",6.0);
+            //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"vel_ignore");
             // rotate to body-frame if necessary
             if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
                 copter.rotate_body_frame_to_NE(vel_vector.x, vel_vector.y);
+                //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",7.0);
+                //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"set_body");
             }
         }
 
+
+
+
         // send request
-        if (!pos_ignore && !vel_ignore && acc_ignore) {
+        //if (!pos_ignore && !vel_ignore && acc_ignore)
+            if (!pos_ignore && !vel_ignore){
+                //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f %f %f",pos_vector.x, pos_vector.y, pos_vector.z);
             copter.guided_set_destination_posvel(pos_vector, vel_vector);
+
+            //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",5.5);
+            //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"Add_pose");
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             copter.guided_set_velocity(vel_vector);
+            //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"Add_vel");
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
             if (!copter.guided_set_destination(pos_vector)) {
                 result = MAV_RESULT_FAILED;
@@ -1802,7 +1833,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         } else {
             result = MAV_RESULT_FAILED;
         }
-
+        //result = MAV_RESULT_ACCEPTED;
         break;
     }
 
@@ -2109,6 +2140,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     {
         mavlink_set_home_position_t packet;
         mavlink_msg_set_home_position_decode(msg, &packet);
+        copter.gcs_send_text(MAV_SEVERITY_DEBUG,"home1");
         if((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
             copter.set_home_to_current_location_and_lock();
         } else {
@@ -2124,6 +2156,8 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 break;
             }
             copter.set_home_and_lock(new_home_loc);
+            copter.gcs_send_text(MAV_SEVERITY_DEBUG,"home2");
+
         }
         break;
     }
