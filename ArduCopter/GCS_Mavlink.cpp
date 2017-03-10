@@ -1278,13 +1278,13 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             // param5 : latitude
             // param6 : longitude
             // param7 : altitude (absolute)
-            copter.gcs_send_text(MAV_SEVERITY_DEBUG,"home_do_set");
+            copter.gcs_send_text(MAV_SEVERITY_DEBUG,"home_do_set0");
             result = MAV_RESULT_FAILED; // assume failure
-            result = MAV_RESULT_ACCEPTED;
+
             if(is_equal(packet.param1,1.0f) || (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7))) {
                 if (copter.set_home_to_current_location_and_lock()) {
                     result = MAV_RESULT_ACCEPTED;
-                    copter.gcs_send_text(MAV_SEVERITY_DEBUG,"set_home");
+                    copter.gcs_send_text(MAV_SEVERITY_DEBUG,"home_do_set1");
                 }
             } else {
                 // sanity check location
@@ -1818,7 +1818,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // send request
         //if (!pos_ignore && !vel_ignore && acc_ignore)
             if (!pos_ignore && !vel_ignore){
-                //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f %f %f",pos_vector.x, pos_vector.y, pos_vector.z);
+                copter.gcs_send_text(MAV_SEVERITY_DEBUG,"Pos&Vel");
             copter.guided_set_destination_posvel(pos_vector, vel_vector);
 
             //copter.gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f",5.5);

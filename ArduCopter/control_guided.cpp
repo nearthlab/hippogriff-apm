@@ -85,7 +85,7 @@ void Copter::guided_pos_control_start()
 {
     // set to position control mode
     guided_mode = Guided_WP;
-    gcs_send_text(MAV_SEVERITY_DEBUG,"poscontrol start");
+    //gcs_send_text(MAV_SEVERITY_DEBUG,"poscontrol start");
     // initialise waypoint and spline controller
     wp_nav.wp_and_spline_init();
 
@@ -100,7 +100,8 @@ void Copter::guided_pos_control_start()
     wp_nav.set_wp_destination(stopping_point, false);
 
     // initialise yaw
-    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+    set_auto_yaw_mode(0);
+    //set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 }
 
 // initialise guided mode's velocity controller
@@ -121,7 +122,7 @@ void Copter::guided_vel_control_start()
 // initialise guided mode's posvel controller
 void Copter::guided_posvel_control_start()
 {
-    gcs_send_text(MAV_SEVERITY_DEBUG,"posvelcontrol");
+    //gcs_send_text(MAV_SEVERITY_DEBUG,"posvelcontrol");
     // set guided_mode to velocity controller
     guided_mode = Guided_PosVel;
 
@@ -263,9 +264,9 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
     posvel_update_time_ms = millis();
     guided_pos_target_cm = destination;
     guided_vel_target_cms = velocity;
-    gcs_send_text(MAV_SEVERITY_DEBUG,"set_destination");
-    gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f %f %f",guided_pos_target_cm.x/100.0,guided_pos_target_cm.y/100.0,guided_pos_target_cm.z/100.0);
-    gcs_send_text(MAV_SEVERITY_DEBUG,"done_destination");
+    //gcs_send_text(MAV_SEVERITY_DEBUG,"set_destination");
+    //gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f %f %f",guided_pos_target_cm.x/100.0,guided_pos_target_cm.y/100.0,guided_pos_target_cm.z/100.0);
+    //gcs_send_text(MAV_SEVERITY_DEBUG,"done_destination");
     pos_control.set_pos_target(guided_pos_target_cm);
 
     // log target
@@ -378,7 +379,8 @@ void Copter::guided_takeoff_run()
 // called from guided_run
 void Copter::guided_pos_control_run()
 {
-    float target_climb_rate = 0.0f;
+    //float target_climb_rate = 0.0f;
+    //gcs_send_text(MAV_SEVERITY_DEBUG,"Pos_control_RUN");
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -402,8 +404,8 @@ void Copter::guided_pos_control_run()
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
-    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+   // target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    //target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
@@ -412,7 +414,7 @@ void Copter::guided_pos_control_run()
     failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+   // pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
     pos_control.update_z_controller();
 
     // call attitude controller
@@ -483,6 +485,7 @@ void Copter::guided_vel_control_run()
 // called from guided_run
 void Copter::guided_posvel_control_run()
 {
+    //gcs_send_text(MAV_SEVERITY_DEBUG,"Posvel_control_RUN");
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
         // set target position and velocity to current position and velocity
@@ -533,11 +536,13 @@ void Copter::guided_posvel_control_run()
 
         // advance position target using velocity target
         guided_pos_target_cm += guided_vel_target_cms * dt;
-
+                       // in 1E7 degrees
+                      // in 1E7 degrees
         // send position and velocity targets to position controller
-        gcs_send_text(MAV_SEVERITY_DEBUG,"%guided_pos_target_cm");
-         gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f %f %f",guided_pos_target_cm.x/100.0,guided_pos_target_cm.y/100.0,guided_pos_target_cm.z/100.0);
-         gcs_send_text(MAV_SEVERITY_DEBUG,"%guided_pos_target_cm");
+        //gcs_send_text(MAV_SEVERITY_DEBUG,"%guided_pos_target_cm");
+        //gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%f %f %f",guided_pos_target_cm.x/100.0,guided_pos_target_cm.y/100.0,guided_pos_target_cm.z/100.0);
+        //gcs_send_text(MAV_SEVERITY_DEBUG,"%guided_pos_target_cm");
+        gcs_send_text_fmt(MAV_SEVERITY_DEBUG,"%ld %ld %ld %ld",current_loc.lat,  current_loc.lng, current_loc.alt * 10, (ahrs.get_home().alt + current_loc.alt) * 10UL);
         pos_control.set_pos_target(guided_pos_target_cm);
         pos_control.set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
 
