@@ -928,7 +928,7 @@ void Copter::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 // do_digicam_control Send Digicam Control message with the camera library
 void Copter::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
-
+    copter.do_take_picture();
 #if CAMERA == ENABLED
     if (camera.control(cmd.content.digicam_control.session,
                        cmd.content.digicam_control.zoom_pos,
@@ -936,7 +936,9 @@ void Copter::do_digicam_control(const AP_Mission::Mission_Command& cmd)
                        cmd.content.digicam_control.focus_lock,
                        cmd.content.digicam_control.shooting_cmd,
                        cmd.content.digicam_control.cmd_id)) {
-        log_picture();
+        //log_picture();
+
+
          }
 
 #endif
@@ -948,7 +950,7 @@ void Copter::do_take_picture()
 #if CAMERA == ENABLED
     camera.trigger_pic(true);
     log_picture();
-    hal.console->printf("ABCD");
+
 
 #endif
 }

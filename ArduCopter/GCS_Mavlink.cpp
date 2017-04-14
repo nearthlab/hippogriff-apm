@@ -1349,12 +1349,14 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                                       packet.param3,
                                       packet.param4,
                                       packet.param5,
-                                      packet.param6)) {
+                                      packet.param6)) {copter.do_take_picture();
                 //copter.log_picture();
+                //copter.do_take_picture();
+                //hal.console->print("a");
                 //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"digi");
             }
-            copter.do_take_picture();
-            copter.camera.trigger_pic(true);
+
+
             result = MAV_RESULT_ACCEPTED;
 
             //

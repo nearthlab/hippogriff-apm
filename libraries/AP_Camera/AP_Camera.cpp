@@ -145,20 +145,21 @@ AP_Camera::trigger_pic(bool send_mavlink_msg)
         break;
     }
 
-    if (send_mavlink_msg) {
+    //if (send_mavlink_msg) {
         // create command long mavlink message
         mavlink_command_long_t cmd_msg;
         memset(&cmd_msg, 0, sizeof(cmd_msg));
-        cmd_msg.command = MAV_CMD_DO_DIGICAM_CONTROL;
+        //cmd_msg.command = MAV_CMD_DO_DIGICAM_CONTROL;
+        cmd_msg.command = 203;
         cmd_msg.param5 = 1;
         // create message
         mavlink_message_t msg;
         mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
 
-        hal.console->printf("ABCD");
+
         // forward to all components
         GCS_MAVLINK::send_to_components(&msg);
-    }
+    //}
 }
 
 /// de-activate the trigger after some delay, but without using a delay() function
