@@ -3,6 +3,7 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_HAL/AP_HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <drivers/drv_input_capture.h>
 #include <drivers/drv_pwm_output.h>
@@ -154,6 +155,7 @@ AP_Camera::trigger_pic(bool send_mavlink_msg)
         mavlink_message_t msg;
         mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
 
+        hal.console->printf("ABCD");
         // forward to all components
         GCS_MAVLINK::send_to_components(&msg);
     }

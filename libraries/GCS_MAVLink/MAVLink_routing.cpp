@@ -177,7 +177,9 @@ void MAVLink_routing::send_to_components(const mavlink_message_t* msg)
 {
     bool sent_to_chan[MAVLINK_COMM_NUM_BUFFERS];
     memset(sent_to_chan, 0, sizeof(sent_to_chan));
-
+#if ROUTING_DEBUG
+                    ::printf("LOLL\n");
+#endif
     // check learned routes
     for (uint8_t i=0; i<num_routes; i++) {
         if ((routes[i].sysid == mavlink_system.sysid) && !sent_to_chan[routes[i].channel]) {

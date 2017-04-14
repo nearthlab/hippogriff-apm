@@ -1350,9 +1350,14 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                                       packet.param4,
                                       packet.param5,
                                       packet.param6)) {
-                copter.log_picture();
+                //copter.log_picture();
+                //copter.gcs_send_text(MAV_SEVERITY_DEBUG,"digi");
             }
+            copter.do_take_picture();
+            copter.camera.trigger_pic(true);
             result = MAV_RESULT_ACCEPTED;
+
+            //
             break;
 #endif // CAMERA == ENABLED
         case MAV_CMD_DO_MOUNT_CONTROL:

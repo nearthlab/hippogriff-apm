@@ -16,7 +16,7 @@
 #define VELNE_M_NSE_DEFAULT     0.5f
 #define VELD_M_NSE_DEFAULT      0.7f
 #define POSNE_M_NSE_DEFAULT     1.0f
-#define ALT_M_NSE_DEFAULT       3.0f
+#define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
 #define GYRO_P_NSE_DEFAULT      3.0E-02f
 #define ACC_P_NSE_DEFAULT       6.0E-01f
@@ -91,7 +91,7 @@
 #define VELNE_M_NSE_DEFAULT     0.5f
 #define VELD_M_NSE_DEFAULT      0.7f
 #define POSNE_M_NSE_DEFAULT     1.0f
-#define ALT_M_NSE_DEFAULT       3.0f
+#define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
 #define GYRO_P_NSE_DEFAULT      3.0E-02f
 #define ACC_P_NSE_DEFAULT       6.0E-01f

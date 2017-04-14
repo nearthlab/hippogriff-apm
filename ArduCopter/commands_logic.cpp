@@ -119,6 +119,8 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
         do_digicam_control(cmd);
+
+
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
@@ -920,11 +922,13 @@ void Copter::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
                      cmd.content.digicam_configure.cmd_id,
                      cmd.content.digicam_configure.engine_cutoff_time);
 #endif
+
 }
 
 // do_digicam_control Send Digicam Control message with the camera library
 void Copter::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
+
 #if CAMERA == ENABLED
     if (camera.control(cmd.content.digicam_control.session,
                        cmd.content.digicam_control.zoom_pos,
@@ -933,7 +937,8 @@ void Copter::do_digicam_control(const AP_Mission::Mission_Command& cmd)
                        cmd.content.digicam_control.shooting_cmd,
                        cmd.content.digicam_control.cmd_id)) {
         log_picture();
-    }
+         }
+
 #endif
 }
 
@@ -943,6 +948,8 @@ void Copter::do_take_picture()
 #if CAMERA == ENABLED
     camera.trigger_pic(true);
     log_picture();
+    hal.console->printf("ABCD");
+
 #endif
 }
 
@@ -966,5 +973,8 @@ void Copter::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
 #if MOUNT == ENABLED
     camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
+    gcs_send_message(MSG_CAMERA_FEEDBACK);
 #endif
+
+
 }

@@ -43,7 +43,7 @@
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     0.5f
-#define ALT_NOISE_DEFAULT       1.0f
+#define ALT_NOISE_DEFAULT       2.0f
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f

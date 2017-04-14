@@ -194,7 +194,8 @@ void Copter::auto_wp_start(const Vector3f& destination)
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
     if (auto_yaw_mode != AUTO_YAW_ROI) {
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        //set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        set_auto_yaw_mode(0);
     }
 }
 
@@ -213,7 +214,8 @@ void Copter::auto_wp_start(const Location_Class& dest_loc)
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
     if (auto_yaw_mode != AUTO_YAW_ROI) {
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        //set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        set_auto_yaw_mode(0);
     }
 }
 
@@ -260,7 +262,8 @@ void Copter::auto_wp_run()
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        //attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), 0, get_smoothing_gain());
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true, get_smoothing_gain());
@@ -285,7 +288,8 @@ void Copter::auto_spline_start(const Location_Class& destination, bool stopped_a
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
     if (auto_yaw_mode != AUTO_YAW_ROI) {
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        //set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        set_auto_yaw_mode(0);
     }
 }
 
