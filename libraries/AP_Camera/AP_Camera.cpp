@@ -198,7 +198,8 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     mav_cmd_long.param6 = cmd_id;
     mav_cmd_long.param7 = engine_cutoff_time;
 
-    mavlink_msg_digicam_configure_send(MAVLINK_COMM_0 ,0 , 0 , 0 ,shutter_speed , 0 , 0 , 0 , 0 , 0 , 0 , 0 );
+    //mavlink_msg_digicam_configure_send(MAVLINK_COMM_0 ,0 , 0 , 0 ,shutter_speed , 0 , 0 , 0 , 0 , 0 , 0 , 0 );
+    mavlink_msg_command_long_send(MAVLINK_COMM_2 , 0 , 0 , 202 , 0 , 0 , shutter_speed , 0 , 0 , 0 , 0 , 0 );
     // Encode Command long into MAVLINK msg
     mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
 
@@ -262,7 +263,9 @@ bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 
     // Encode Command long into MAVLINK msg
     mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
-    mavlink_msg_digicam_control_send(MAVLINK_COMM_0,0,0,0,0,0,0,1,0,0,0);
+    //mavlink_msg_digicam_control_send(MAVLINK_COMM_0,0,0,0,0,0,0,1,0,0,0);
+    mavlink_msg_command_long_send(MAVLINK_COMM_2 , 0 , 0 , 203 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 );
+
     // send to all components
     GCS_MAVLINK::send_to_components(&msg);
     return ret;
