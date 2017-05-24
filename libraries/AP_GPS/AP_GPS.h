@@ -429,6 +429,7 @@ private:
 #include "AP_GPS_SBP.h"
 #include "AP_GPS_PX4.h"
 #include "AP_GPS_ERB.h"
+#include "AP_GPS_ATOM.h"
 #include "AP_GPS_TRIMBLE.h"
 #include "AP_GPS_NOVATEL.h"
 
