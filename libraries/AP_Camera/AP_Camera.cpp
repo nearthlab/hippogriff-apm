@@ -57,10 +57,10 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
 void
 AP_Camera::servo_pic()
 {
-	RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_on_pwm);
+    RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_on_pwm);
 
-	// leave a message that it should be active for this many loops (assumes 50hz loops)
-	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+    // leave a message that it should be active for this many loops (assumes 50hz loops)
+    _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
 }
 
 /// basic relay activation
@@ -142,6 +142,8 @@ AP_Camera::control_msg(mavlink_message_t* msg)
      *  packet.zoom_pos
      *  packet.zoom_step
      */
+    //mavlink_msg_command_long_send(MAVLINK_COMM_0 , 0 , 0 , 203 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 );
+   // mavlink_msg_digicam_control_send(MAVLINK_COMM_0,0,0,0,0,0,0,1,0,0,0);
     if (packet.shot)
     {
         trigger_pic(false);
@@ -172,6 +174,33 @@ void AP_Camera::configure_cmd(const AP_Mission::Mission_Command& cmd)
 
     // Encode Command long into MAVLINK msg
     mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
+    //mavlink_msg_digicam_configure_send(MAVLINK_COMM_0 ,0 , 0 , 0 , cmd.content.digicam_configure.shutter_speed , 0 , 0 , 0 , 0 , 0 , 0 , 0 );
+
+    // send to all components
+    GCS_MAVLINK::send_to_components(&msg);
+}
+
+void AP_Camera::configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time)
+{
+    // we cannot process the configure command so convert to mavlink message
+    // and send to all components in case they and process it
+
+    mavlink_message_t msg;
+    mavlink_command_long_t mav_cmd_long = {};
+
+    // convert mission command to mavlink command_long
+    mav_cmd_long.command = MAV_CMD_DO_DIGICAM_CONFIGURE;
+    mav_cmd_long.param1 = shooting_mode;
+    mav_cmd_long.param2 = shutter_speed;
+    mav_cmd_long.param3 = aperture;
+    mav_cmd_long.param4 = ISO;
+    mav_cmd_long.param5 = exposure_type;
+    mav_cmd_long.param6 = cmd_id;
+    mav_cmd_long.param7 = engine_cutoff_time;
+
+    mavlink_msg_digicam_configure_send(MAVLINK_COMM_0 ,0 , 0 , 0 ,shutter_speed , 0 , 0 , 0 , 0 , 0 , 0 , 0 );
+    // Encode Command long into MAVLINK msg
+    mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
 
     // send to all components
     GCS_MAVLINK::send_to_components(&msg);
@@ -200,8 +229,43 @@ void AP_Camera::control_cmd(const AP_Mission::Mission_Command& cmd)
     // Encode Command long into MAVLINK msg
     mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
 
+    //mavlink_msg_digicam_control_send(MAVLINK_COMM_0,0,0,0,0,0,0,1,0,0,0);
+    //mavlink_msg_digicam_control_send(MAVLINK_COMM_1,0,0,0,0,0,0,1,0,0,0);
+    //mavlink_msg_digicam_control_send(MAVLINK_COMM_2,0,0,0,0,0,0,1,0,0,0);
+    //mavlink_msg_digicam_control_send(MAVLINK_COMM_3,0,0,0,0,0,0,1,0,0,0);
+
     // send to all components
     GCS_MAVLINK::send_to_components(&msg);
+}
+
+bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+{
+    bool ret = false;
+
+    // take picture
+    if (is_equal(shooting_cmd,1.0f)) {
+        trigger_pic(false);
+        ret = true;
+    }
+
+    mavlink_message_t msg;
+    mavlink_command_long_t mav_cmd_long = {};
+
+    // convert command to mavlink command long
+    mav_cmd_long.command = MAV_CMD_DO_DIGICAM_CONTROL;
+    mav_cmd_long.param1 = session;
+    mav_cmd_long.param2 = zoom_pos;
+    mav_cmd_long.param3 = zoom_step;
+    mav_cmd_long.param4 = focus_lock;
+    mav_cmd_long.param5 = shooting_cmd;
+    mav_cmd_long.param6 = cmd_id;
+
+    // Encode Command long into MAVLINK msg
+    mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
+    mavlink_msg_digicam_control_send(MAVLINK_COMM_0,0,0,0,0,0,0,1,0,0,0);
+    // send to all components
+    GCS_MAVLINK::send_to_components(&msg);
+    return ret;
 }
 
 /*
@@ -217,7 +281,8 @@ void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS
         altitude = current_loc.alt;
         altitude_rel = current_loc.alt - ahrs.get_home().alt;
     }
-
+    //mavlink_msg_command_long_send(MAVLINK_COMM_0 , 0 , 0 , 203 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 );
+    //mavlink_msg_command_long_send(MAVLINK_COMM_0 , 0 , 0 , 203 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 );
     mavlink_msg_camera_feedback_send(chan, 
         gps.time_epoch_usec(),
         0, 0, _image_index,

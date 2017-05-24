@@ -419,7 +419,7 @@ void NOINLINE Copter::send_rangefinder(mavlink_channel_t chan, uint8_t instatnce
     mavlink_msg_rangefinder_send(
             chan,
             sonar.distance_cm(instatnce) * 0.01f,
-            -instatnce);	// TODO: To tricky. You should change MavLink
+            -instatnce);    // TODO: To tricky. You should change MavLink
 }
 
 /*
@@ -963,9 +963,9 @@ GCS_MAVLINK::data_stream_send(void)
 
     // 5Hz
     if (stream_trigger(STREAM_EXTRA2)) {
-    	//send_message(MSG_RADIO_IN);
-    	//send_message(MSG_RPM);
-    	//send_message(MSG_SYSTEM_TIME);
+        //send_message(MSG_RADIO_IN);
+        //send_message(MSG_RPM);
+        //send_message(MSG_SYSTEM_TIME);
 
     }
 
@@ -973,7 +973,7 @@ GCS_MAVLINK::data_stream_send(void)
 
     // 1Hz
     if (stream_trigger(STREAM_EXTRA3)) {
-    	//send_message(MSG_PID_TUNING);
+        //send_message(MSG_PID_TUNING);
         //send_message(MSG_EXTENDED_STATUS1);
         //send_message(MSG_WIND);
         //send_message(MSG_GPS_RAW);
@@ -1200,9 +1200,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param3 : direction (-1:ccw, +1:cw)
             // param4 : relative offset (1) or absolute angle (0)
             if ((packet.param1 >= 0.0f)   &&
-            	(packet.param1 <= 360.0f) &&
-            	(is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
-            	copter.set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
+                (packet.param1 <= 360.0f) &&
+                (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
+                copter.set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;
@@ -1477,6 +1477,35 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
         }
+#if CAMERA == ENABLED
+        case MAV_CMD_DO_DIGICAM_CONFIGURE:
+
+            copter.camera.configure(packet.param1,
+                                    packet.param2,
+                                    packet.param3,
+                                    packet.param4,
+                                    packet.param5,
+                                    packet.param6,
+                                    packet.param7);
+
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
+        case MAV_CMD_DO_DIGICAM_CONTROL:
+
+            if (copter.camera.control(packet.param1,
+                                      packet.param2,
+                                      packet.param3,
+                                      packet.param4,
+                                      packet.param5,
+                                      packet.param6)) {
+                copter.log_picture();
+            }
+
+
+            result = MAV_RESULT_ACCEPTED;
+            break;
+#endif // CAMERA == ENABLED
 
         default:
             result = MAV_RESULT_UNSUPPORTED;
@@ -1717,10 +1746,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 #if CAMERA == ENABLED
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:      // MAV ID: 202
+        //copter.camera.configure_cmd(msg);
         break;
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-        copter.camera.control_msg(msg);
+        //copter.camera.control_msg(msg);
+        //mavlink_msg_digicam_control_send(MAVLINK_COMM_0,0,0,0,0,0,0,1,0,0,0);
+        copter.gcs_send_text_P(SEVERITY_HIGH,PSTR("shot"));
         copter.log_picture();
         break;
 #endif // CAMERA == ENABLED
