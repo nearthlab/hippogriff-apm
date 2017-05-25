@@ -61,7 +61,7 @@ public:
 
     // control_msg - process MOUNT_CONTROL messages received from GCS
     virtual void control_msg(mavlink_message_t* msg);
-
+    virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
     // status_msg - called to allow mounts to send their status to GCS via MAVLink
     virtual void status_msg(mavlink_channel_t chan) {};
 

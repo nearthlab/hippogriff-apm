@@ -121,7 +121,8 @@ public:
     // control_msg - process MOUNT_CONTROL messages received from GCS
     void control_msg(mavlink_message_t* msg) { control_msg(_primary, msg); }
     void control_msg(uint8_t instance, mavlink_message_t* msg);
-
+    void control(uint8_t instance, int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode);
+    void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode) { control(_primary, pitch_or_lat, roll_or_lon, yaw_or_alt, mount_mode); }
     // handle a GIMBAL_REPORT message
     void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg);
 

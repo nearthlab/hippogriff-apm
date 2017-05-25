@@ -81,6 +81,43 @@ void AP_Mount_Backend::control_msg(mavlink_message_t *msg)
     }
 }
 
+void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode)
+{
+    _frontend.set_mode(_instance, mount_mode);
+
+    // interpret message fields based on mode
+    switch (_frontend.get_mode(_instance)) {
+        case MAV_MOUNT_MODE_RETRACT:
+        case MAV_MOUNT_MODE_NEUTRAL:
+            // do nothing with request if mount is retracted or in neutral position
+            break;
+
+        // set earth frame target angles from mavlink message
+        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+            set_angle_targets(roll_or_lon*0.01f, pitch_or_lat*0.01f, yaw_or_alt*0.01f);
+            break;
+
+        // Load neutral position and start RC Roll,Pitch,Yaw control with stabilization
+        case MAV_MOUNT_MODE_RC_TARGETING:
+            // do nothing if pilot is controlling the roll, pitch and yaw
+            break;
+
+        // set lat, lon, alt position targets from mavlink message
+        case MAV_MOUNT_MODE_GPS_POINT:
+            Location target_location;
+            memset(&target_location, 0, sizeof(target_location));
+            target_location.lat = pitch_or_lat;
+            target_location.lng = roll_or_lon;
+            target_location.alt = yaw_or_alt;
+            target_location.flags.relative_alt = true;
+            set_roi_target(target_location);
+            break;
+
+        default:
+            // do nothing
+            break;
+    }
+}
 // update_targets_from_rc - updates angle targets using input from receiver
 void AP_Mount_Backend::update_targets_from_rc()
 {

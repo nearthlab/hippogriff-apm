@@ -1504,8 +1504,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 
             result = MAV_RESULT_ACCEPTED;
+
+
+
             break;
 #endif // CAMERA == ENABLED
+
+        case MAV_CMD_DO_MOUNT_CONTROL:
+#if MOUNT == ENABLED
+            copter.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+            copter.camera_mount.control_msg(msg);
+            result = MAV_RESULT_ACCEPTED;
+            break;
+#endif
 
         default:
             result = MAV_RESULT_UNSUPPORTED;
@@ -1764,6 +1775,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
         copter.camera_mount.control_msg(msg);
+        copter.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+
         break;
 #endif // MOUNT == ENABLED
 
