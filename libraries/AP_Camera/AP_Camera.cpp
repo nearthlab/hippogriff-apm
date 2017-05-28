@@ -239,38 +239,41 @@ void AP_Camera::control_cmd(const AP_Mission::Mission_Command& cmd)
     GCS_MAVLINK::send_to_components(&msg);
 }
 
-bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+void AP_Camera::send_digicam_control(mavlink_channel_t chan)
 {
-    bool ret = false;
-
-    // take picture
-    if (is_equal(shooting_cmd,1.0f)) {
-        trigger_pic(false);
-        ret = true;
-    }
-
-    mavlink_message_t msg;
-    mavlink_command_long_t mav_cmd_long = {};
-
-    // convert command to mavlink command long
-    mav_cmd_long.command = MAV_CMD_DO_DIGICAM_CONTROL;
-    mav_cmd_long.param1 = session;
-    mav_cmd_long.param2 = zoom_pos;
-    mav_cmd_long.param3 = zoom_step;
-    mav_cmd_long.param4 = focus_lock;
-    mav_cmd_long.param5 = shooting_cmd;
-    mav_cmd_long.param6 = cmd_id;
-
-    // Encode Command long into MAVLINK msg
-    mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
-    //mavlink_msg_digicam_control_send(MAVLINK_COMM_0,0,0,0,0,0,0,1,0,0,0);
-    mavlink_msg_command_long_send(MAVLINK_COMM_0 , 0 , 0 , 203 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 );
-
-    // send to all components
-    GCS_MAVLINK::send_to_components(&msg);
-    return ret;
+	PX4_INFO("suck");
+	mavlink_msg_command_long_send(chan , 0 , 0 , 203 , 0 , 0 , 0 , 0 , 0 , 1 , 0 , 0 );
 }
 
+void AP_Camera::send_digicam_config(mavlink_channel_t chan)
+{
+	mavlink_msg_command_long_send(chan,
+		0, 0,
+		_digicam_config.command,
+		_digicam_config.confirmation,
+		_digicam_config.param1,
+		_digicam_config.param2,
+		_digicam_config.param3,
+		_digicam_config.param4,
+		_digicam_config.param5,
+		_digicam_config.param6,
+		_digicam_config.param7
+		);
+}
+
+void AP_Camera::set_digicam_config(mavlink_command_long_t* packet)
+{
+	_digicam_config.command = packet->command;
+	_digicam_config.confirmation = packet->confirmation;
+	_digicam_config.param1 = packet->param1;
+	_digicam_config.param2 = packet->param2;
+	_digicam_config.param3 = packet->param3;
+	_digicam_config.param4 = packet->param4;
+	_digicam_config.param5 = packet->param5;
+	_digicam_config.param6 = packet->param6;
+	_digicam_config.param7 = packet->param7;
+
+}
 /*
   Send camera feedback to the GCS
  */

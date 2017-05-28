@@ -51,6 +51,9 @@ public:
     // MAVLink methods
     void            control_msg(mavlink_message_t* msg);
     void            send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc);
+    void			send_digicam_control(mavlink_channel_t chan);
+    void			send_digicam_config(mavlink_channel_t chan);
+    void			set_digicam_config(mavlink_command_long_t* packet);
 
     // Mission command processing
     void            configure_cmd(const AP_Mission::Mission_Command& cmd);
@@ -80,6 +83,8 @@ private:
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
+
+    mavlink_command_long_t _digicam_config;
 
 };
 

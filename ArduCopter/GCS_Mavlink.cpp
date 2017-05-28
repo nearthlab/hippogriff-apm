@@ -668,6 +668,20 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_TAKE_PICTURE:
+    {
+    	CHECK_PAYLOAD_SIZE(COMMAND_LONG);
+    	copter.camera.send_digicam_control(chan);
+    	break;
+    }
+
+    case MSG_DIGICAM_CONFIG:
+    {
+    	CHECK_PAYLOAD_SIZE(COMMAND_LONG);
+    	copter.camera.send_digicam_config(chan);
+    }
+
+
     case MSG_STATUSTEXT:
         CHECK_PAYLOAD_SIZE(STATUSTEXT);
         copter.send_statustext(chan);
@@ -1479,33 +1493,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 #if CAMERA == ENABLED
         case MAV_CMD_DO_DIGICAM_CONFIGURE:
-
-            copter.camera.configure(packet.param1,
-                                    packet.param2,
-                                    packet.param3,
-                                    packet.param4,
-                                    packet.param5,
-                                    packet.param6,
-                                    packet.param7);
-
+        	//copter.gcs_send_message(msg);
+        	copter.camera.set_digicam_config(&packet);
+        	copter.gcs_send_message(MSG_DIGICAM_CONFIG);
             result = MAV_RESULT_ACCEPTED;
             break;
 
         case MAV_CMD_DO_DIGICAM_CONTROL:
-
-            if (copter.camera.control(packet.param1,
-                                      packet.param2,
-                                      packet.param3,
-                                      packet.param4,
-                                      packet.param5,
-                                      packet.param6)) {
-                copter.log_picture();
-            }
-
-
+        	//copter.gcs_send_message(msg);
+        	copter.do_take_picture();
             result = MAV_RESULT_ACCEPTED;
-
-
 
             break;
 #endif // CAMERA == ENABLED
@@ -1527,6 +1524,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
 
         break;
+    }
+
+    case MAVLINK_MSG_ID_STATUSTEXT:
+    {
+    	PX4_INFO("STATUS: %d", chan);
+    	mavlink_statustext_t packet;
+    	mavlink_msg_statustext_decode(msg, &packet);
+    	copter.gcs_send_text_P(SEVERITY_LOW, packet.text);
     }
 
     case MAVLINK_MSG_ID_COMMAND_ACK:        // MAV ID: 77

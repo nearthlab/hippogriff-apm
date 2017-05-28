@@ -876,7 +876,8 @@ void Copter::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 void Copter::do_take_picture()
 {
 #if CAMERA == ENABLED
-    camera.trigger_pic(true);
+    //camera.trigger_pic(true);
+	gcs_send_message(MSG_TAKE_PICTURE);
     log_picture();
 #endif
 }
