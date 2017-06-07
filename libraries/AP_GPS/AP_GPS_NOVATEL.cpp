@@ -26,6 +26,11 @@ AP_GPS_NOVATEL::AP_GPS_NOVATEL(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::
     _new_speed(0),
     next_fix(AP_GPS::NO_FIX)
 {
+	uint8_t str1[32] = "log com2 bestposb ontime 0.05\r\n";
+	uint8_t str2[32] = "log com2 bestvelb ontime 0.05\r\n";
+
+	_port->write(str1, sizeof(str1));
+	_port->write(str2, sizeof(str2));
 }
 
 // Process bytes available from the stream

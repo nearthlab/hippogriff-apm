@@ -122,7 +122,7 @@ private:
     bool _decode();
     bool _parse(uint8_t data);
     void _request();
-    void _calculate_ecef2ned(double lat, double lon);
+    void _calculate_ecef2ned(double lat_deg, double lon_deg);
     void _convert_pos_ecef_to_llh();
     void _convert_vel_ecef_to_ned();
     AP_GPS::GPS_Status _get_gps_status();

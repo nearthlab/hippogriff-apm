@@ -142,7 +142,7 @@ AP_GPS_ATOM::_decode_pvt_coo(uint8_t buf[])
 		+ (uint64_t)((buf[8]) << 20)
 		+ (uint64_t)((buf[9]) << 12)
 		+ (uint64_t)((buf[10]) << 4)
-		+ (uint64_t)((0xFC & buf[11]) >> 4);
+		+ (uint64_t)((0xF0 & buf[11]) >> 4);
 
 	_pvt.coo.y = ((uint64_t)(0x0F & buf[11]) * 17179869184ull)
 		+ ((uint64_t)(buf[12]) * 67108864ull)
@@ -172,12 +172,12 @@ AP_GPS_ATOM::_decode_pvt_vel(uint8_t buf[])
 	_pvt.vel.vy = ((0x07 & buf[4]) << 22)
 		+ ((buf[5]) << 14)
 		+ ((buf[6]) << 6)
-		+ ((0x3F & buf[7]) >> 2);
+		+ ((0xFC & buf[7]) >> 2);
 
 	_pvt.vel.vz = ((0x03 & buf[7]) << 23)
 		+ ((buf[8]) << 15)
 		+ ((buf[9]) << 7)
-		+ ((0x3F & buf[10]) >> 1);
+		+ ((0xFE & buf[10]) >> 1);
 }
 
 void
@@ -198,7 +198,7 @@ AP_GPS_ATOM::_decode()
 
 	state.location.lat = (int32_t)(_pos_llh.x * RAD_TO_DEG * 1e7);
 	state.location.lng = (int32_t)(_pos_llh.y * RAD_TO_DEG * 1e7);
-	state.location.alt = (int32_t)(_pos_llh.z * RAD_TO_DEG * 1e2);
+	state.location.alt = (int32_t)(_pos_llh.z * 1e2);
 	state.have_horizontal_accuracy = false;
 	state.have_vertical_accuracy = false;
 
@@ -214,6 +214,7 @@ AP_GPS_ATOM::_decode()
 	state.velocity.y = _vel_ned.y;
 	state.velocity.z = _vel_ned.z;
 
+	//PX4_INFO("%.4f %.4f %.4f",state.velocity.x, state.velocity.y, state.velocity.z);
 	/*
 	PX4_INFO("%d %d %d %d %d %.6f %.6f %.6f",
 			state.status, state.num_sats,
@@ -304,17 +305,20 @@ AP_GPS_ATOM::_request()
 
 	port->write(str_clear, sizeof(str_clear));
 	port->write(str_request, sizeof(str_request));
+	PX4_INFO("request!");
 }
 
 void
 AP_GPS_ATOM::inject_data(uint8_t *data, uint8_t len)
 {
+	PX4_INFO("inject! %d", len);
 
     if (port->txspace() > len) {
         port->write(data, len);
     } else {
         Debug("ATOM: Not enough TXSPACE");
     }
+
 }
 
 AP_GPS::GPS_Status
@@ -329,7 +333,7 @@ AP_GPS_ATOM::_get_gps_status()
 		return AP_GPS::GPS_OK_FIX_3D;
 
 	case 2:
-		return AP_GPS::GPS_OK_FIX_3D_DGPS;
+		return AP_GPS::GPS_OK_FIX_3D;
 
 	case 5:
 		return AP_GPS::GPS_OK_FIX_3D_DGPS;
@@ -355,10 +359,10 @@ AP_GPS_ATOM::_convert_pos_ecef_to_llh()
  * @remark refer to http://www.navipedia.net/index.php/Transformations_between_ECEF_and_ENU_coordinates
  */
 void
-AP_GPS_ATOM::_calculate_ecef2ned(double lat, double lon)
+AP_GPS_ATOM::_calculate_ecef2ned(double lat_deg, double lon_deg)
 {
-	double lat_rad = radians(lat);
-	double lon_rad = radians(lon);
+	double lat_rad = radians(lat_deg);
+	double lon_rad = radians(lon_deg);
 
 	double clat = cos(lat_rad);
 	double slat = sin(lat_rad);
@@ -386,9 +390,9 @@ AP_GPS_ATOM::_calculate_ecef2ned(double lat, double lon)
 void
 AP_GPS_ATOM::_convert_vel_ecef_to_ned()
 {
-	double v_ecef_x = _pvt.vel.vx * 0.0001;
-	double v_ecef_y = _pvt.vel.vy * 0.0001;
-	double v_ecef_z = _pvt.vel.vz * 0.0001;
+	double v_ecef_x = _pvt.vel.vx * 0.0001;	// m/s
+	double v_ecef_y = _pvt.vel.vy * 0.0001;	// m/s
+	double v_ecef_z = _pvt.vel.vz * 0.0001;	// m/s
 
 	_vel_ned.x = 		_ecef2ned[0][0] * v_ecef_x
 						+	_ecef2ned[0][1] * v_ecef_y
