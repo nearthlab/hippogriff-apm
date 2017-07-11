@@ -96,12 +96,13 @@ do {                                            \
 // We don't attempt to send $PUBX,41 as the unit must already be talking NMEA
 // and we don't know the baudrate.
 //
+
 #define UBLOX_INIT_MSG \
     "$PUBX,40,gga,0,1,0,0,0,0*7B\r\n"   /* GGA on at one per fix */ \
     "$PUBX,40,vtg,0,1,0,0,0,0*7F\r\n"   /* VTG on at one per fix */ \
     "$PUBX,40,rmc,0,0,0,0,0,0*67\r\n"   /* RMC off (XXX suppress other message types?) */
 
-const prog_char AP_GPS_NMEA::_initialisation_blob[] PROGMEM = SIRF_INIT_MSG MTK_INIT_MSG UBLOX_INIT_MSG;
+const prog_char AP_GPS_NMEA::_initialisation_blob[] PROGMEM = SIRF_INIT_MSG MTK_INIT_MSG;// UBLOX_INIT_MSG;
 
 // NMEA message identifiers ////////////////////////////////////////////////////
 //

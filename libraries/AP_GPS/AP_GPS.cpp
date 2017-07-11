@@ -134,6 +134,10 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
 
     // search for serial ports with gps protocol
     _port[0] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 0);
+    //AP_GPS_Backend *new_gps = NULL;
+    //AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data);
+    //new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
+
 
 #if GPS_MAX_INSTANCES > 1
     _port[1] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 1);
@@ -146,8 +150,8 @@ const uint32_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 115200U, 57600U, 9
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
-const prog_char AP_GPS::_initialisation_blob[] PROGMEM = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
-const prog_char AP_GPS::_initialisation_raw_blob[] PROGMEM = UBLOX_SET_BINARY_RAW_BAUD MTK_SET_BINARY SIRF_SET_BINARY;
+const prog_char AP_GPS::_initialisation_blob[] PROGMEM = MTK_SET_BINARY SIRF_SET_BINARY;//UBLOX_SET_BINARY
+const prog_char AP_GPS::_initialisation_raw_blob[] PROGMEM = MTK_SET_BINARY SIRF_SET_BINARY;//UBLOX_SET_BINARY_RAW_BAUD
 
 /*
   send some more initialisation string bytes if there is room in the
@@ -232,19 +236,19 @@ AP_GPS::detect_instance(uint8_t instance)
 		_port[instance]->begin(baudrate);
 		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 		dstate->last_baud_change_ms = now;
-#if UBLOX_RXM_RAW_LOGGING
-    if(_raw_data != 0)
-        send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
-    else
-#endif
-        send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+//#if UBLOX_RXM_RAW_LOGGING
+//   if(_raw_data != 0)
+//       send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
+//#endif
+//     send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
     }
 
-    send_blob_update(instance);
+   send_blob_update(instance);
 
     while (initblob_state[instance].remaining == 0 && _port[instance]->available() > 0
             && new_gps == NULL) {
         uint8_t data = _port[instance]->read();
+
         /*
           running a uBlox at less than 38400 will lead to packet
           corruption, as we can't receive the packets in the 200ms
@@ -253,11 +257,12 @@ AP_GPS::detect_instance(uint8_t instance)
           for.
         */
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
-            pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
+            pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             hal.console->print_P(PSTR(" ublox "));
+            hal.console->printf_P(PSTR("data = %d"),data);
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
-        } 
+        }
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
 			hal.console->print_P(PSTR(" MTK19 "));
@@ -358,11 +363,14 @@ AP_GPS::update_instance(uint8_t instance)
         // the port is locked by another driver
         return;
     }
-
     if (drivers[instance] == NULL || state[instance].status == NO_GPS) {
         // we don't yet know the GPS type of this one, or it has timed
         // out and needs to be re-initialised
-        detect_instance(instance);
+
+       detect_instance(instance);
+        //struct detect_state *dstate = &detect_state[instance];
+        //uint8_t data = _port[instance]->read();
+        //AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data);
         return;
     }
 
